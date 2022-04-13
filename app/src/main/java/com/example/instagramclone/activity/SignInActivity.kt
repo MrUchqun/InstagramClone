@@ -8,6 +8,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import com.example.instagramclone.R
+import com.example.instagramclone.managers.AuthManager
+import com.example.instagramclone.managers.handler.AuthHandler
+import com.example.instagramclone.utils.Extensions.toast
+import java.lang.Exception
 
 /**
  * In SignUpActivity, user can login using email, password
@@ -30,7 +34,10 @@ class SignInActivity : BaseActivity() {
 
         val b_signin = findViewById<Button>(R.id.b_signin)
         b_signin.setOnClickListener {
-            callMainActivity()
+            val email = et_email.text.toString().trim()
+            val password = et_password.text.toString().trim()
+            if (email.isNotEmpty() && password.isNotEmpty())
+                firebaseSignIn(email, password)
         }
 
         val tv_signup = findViewById<TextView>(R.id.tv_signup)
@@ -39,10 +46,20 @@ class SignInActivity : BaseActivity() {
         }
     }
 
-    private fun callMainActivity() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
-        finish()
+    private fun firebaseSignIn(email: String, password: String) {
+        showLoading(this)
+        AuthManager.signIn(email, password, object : AuthHandler {
+            override fun onSuccess(uid: String) {
+                dismissLoading()
+                toast(getString(R.string.str_signin_success))
+                callMainActivity(context)
+            }
+
+            override fun onError(exception: Exception?) {
+                dismissLoading()
+                toast(getString(R.string.str_signin_failed))
+            }
+        })
     }
 
     private fun callSignUpActivity() {

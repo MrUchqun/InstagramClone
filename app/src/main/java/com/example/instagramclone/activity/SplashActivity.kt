@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.WindowManager
 import com.example.instagramclone.R
+import com.example.instagramclone.managers.AuthManager
 
 /**
  * In SplashActivity, user can visit to SignInActivity or MainActivity
@@ -33,14 +34,14 @@ class SplashActivity : BaseActivity() {
         object : CountDownTimer(2000, 1000) {
             override fun onTick(millisUntilFinished: Long) {}
             override fun onFinish() {
-                callSignInActivity()
+                if (AuthManager.isSignedIn()) {
+                    callMainActivity(context)
+                } else {
+                    callSignInActivity(context)
+                }
             }
         }.start()
     }
 
-    private fun callSignInActivity() {
-        val intent = Intent(this, SignInActivity::class.java)
-        startActivity(intent)
-        finish()
-    }
+
 }

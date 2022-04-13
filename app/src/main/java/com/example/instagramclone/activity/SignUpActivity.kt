@@ -3,10 +3,16 @@ package com.example.instagramclone.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import com.example.instagramclone.R
+import com.example.instagramclone.managers.AuthManager
+import com.example.instagramclone.managers.handler.AuthHandler
+import com.example.instagramclone.model.User
+import com.example.instagramclone.utils.Extensions.toast
+import java.lang.Exception
 
 /**
  * In SignUpActivity, user can signup using fullName, email, password
@@ -33,20 +39,33 @@ class SignUpActivity : BaseActivity() {
 
         val b_signup = findViewById<Button>(R.id.b_signup)
         b_signup.setOnClickListener {
+            val fullname = et_fullname.text.toString().trim()
             val email = et_email.text.toString().trim()
             val password = et_password.text.toString().trim()
-
+            if (fullname.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty())
+                firebaseSignUp(User(fullname, email, password, ""))
         }
 
         val tv_signin = findViewById<TextView>(R.id.tv_signin)
         tv_signin.setOnClickListener {
-            callSignInActivity()
+            callSignInActivity(context)
         }
     }
 
-    private fun callSignInActivity() {
-        val intent = Intent(this, SignInActivity::class.java)
-        startActivity(intent)
-        finish()
+    private fun firebaseSignUp(user: User) {
+        showLoading(this)
+        AuthManager.signUp(user.email, user.password, object : AuthHandler {
+            override fun onSuccess(uid: String) {
+                user.uid = uid
+                dismissLoading()
+                toast(getString(R.string.str_signup_success))
+                callMainActivity(context)
+            }
+
+            override fun onError(exception: Exception?) {
+                dismissLoading()
+                toast(getString(R.string.str_signup_failed))
+            }
+        })
     }
 }

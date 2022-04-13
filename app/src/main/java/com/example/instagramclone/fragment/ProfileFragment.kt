@@ -1,16 +1,22 @@
 package com.example.instagramclone.fragment
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.media.Image
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.instagramclone.R
+import com.example.instagramclone.activity.SignInActivity
 import com.example.instagramclone.adapter.ProfileAdapter
+import com.example.instagramclone.managers.AuthManager
 import com.example.instagramclone.model.Post
 import com.example.instagramclone.utils.Logger
 import com.google.android.material.imageview.ShapeableImageView
@@ -41,6 +47,12 @@ class ProfileFragment : BaseFragment() {
         val iv_profile = view.findViewById<ShapeableImageView>(R.id.iv_profile)
         iv_profile.setOnClickListener {
             pickFishBunPhoto()
+        }
+
+        val iv_logout = view.findViewById<ImageView>(R.id.iv_logout)
+        iv_logout.setOnClickListener {
+            AuthManager.signOut()
+            callSignInActivity(requireContext())
         }
 
         refreshAdapter(loadPost())
