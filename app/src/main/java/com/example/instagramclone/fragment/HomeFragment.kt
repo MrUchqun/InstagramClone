@@ -10,6 +10,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.instagramclone.R
 import com.example.instagramclone.adapter.HomeAdapter
+import com.example.instagramclone.managers.AuthManager
+import com.example.instagramclone.managers.DatabaseManager
+import com.example.instagramclone.managers.handler.DBPostsHandler
 import com.example.instagramclone.model.Post
 import java.lang.RuntimeException
 
@@ -57,7 +60,22 @@ class HomeFragment : BaseFragment() {
             listener!!.scrollToUpload()
         }
 
-        refreshAdapter(loadPost())
+        loadMyFeeds()
+    }
+
+    private fun loadMyFeeds() {
+        showLoading(requireActivity())
+        val uid = AuthManager.currentUser()!!.uid
+        DatabaseManager.loadFeeds(uid, object : DBPostsHandler {
+            override fun onSuccess(posts: ArrayList<Post>) {
+                dismissLoading()
+                refreshAdapter(posts)
+            }
+
+            override fun onError(e: java.lang.Exception) {
+                dismissLoading()
+            }
+        })
     }
 
     private fun refreshAdapter(list: ArrayList<Post>) {

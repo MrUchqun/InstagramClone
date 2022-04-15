@@ -10,14 +10,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.instagramclone.R
 import com.example.instagramclone.activity.SignInActivity
 import com.example.instagramclone.adapter.ProfileAdapter
 import com.example.instagramclone.managers.AuthManager
+import com.example.instagramclone.managers.DatabaseManager
+import com.example.instagramclone.managers.StorageManager
+import com.example.instagramclone.managers.handler.DBPostsHandler
+import com.example.instagramclone.managers.handler.DBUserHandler
+import com.example.instagramclone.managers.handler.StorageHandler
 import com.example.instagramclone.model.Post
+import com.example.instagramclone.model.User
 import com.example.instagramclone.utils.Logger
 import com.google.android.material.imageview.ShapeableImageView
 import com.sangcomz.fishbun.FishBun
@@ -26,6 +34,10 @@ import com.sangcomz.fishbun.adapter.image.impl.GlideAdapter
 class ProfileFragment : BaseFragment() {
 
     lateinit var recyclerView: RecyclerView
+    lateinit var iv_profile: ShapeableImageView
+    lateinit var tv_fullname: TextView
+    lateinit var tv_email: TextView
+    lateinit var tv_posts: TextView
 
     var pickedPhoto: Uri? = null
     var allPhotos = ArrayList<Uri>()
@@ -41,10 +53,14 @@ class ProfileFragment : BaseFragment() {
     }
 
     private fun initViews(view: View) {
+        tv_fullname = view.findViewById(R.id.tv_fullname)
+        tv_email = view.findViewById(R.id.tv_email)
+        tv_posts = view.findViewById(R.id.tv_posts)
+
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = GridLayoutManager(activity, 2)
 
-        val iv_profile = view.findViewById<ShapeableImageView>(R.id.iv_profile)
+        iv_profile = view.findViewById(R.id.iv_profile)
         iv_profile.setOnClickListener {
             pickFishBunPhoto()
         }
@@ -55,7 +71,41 @@ class ProfileFragment : BaseFragment() {
             callSignInActivity(requireContext())
         }
 
-        refreshAdapter(loadPost())
+        loadUserInfo()
+        loadMyPosts()
+    }
+
+    private fun loadMyPosts() {
+        val uid = AuthManager.currentUser()!!.uid
+        DatabaseManager.loadPosts(uid, object : DBPostsHandler {
+            override fun onSuccess(posts: ArrayList<Post>) {
+                tv_posts.text = posts.size.toString()
+                refreshAdapter(posts)
+            }
+
+            override fun onError(e: java.lang.Exception) {
+            }
+        })
+    }
+
+    private fun loadUserInfo() {
+        DatabaseManager.loadUser(AuthManager.currentUser()!!.uid, object : DBUserHandler {
+            override fun onSuccess(user: User?) {
+                if (user != null)
+                    showUserInfo(user)
+            }
+
+            override fun onError(e: Exception) {
+
+            }
+        })
+    }
+
+    private fun showUserInfo(user: User) {
+        tv_fullname.text = user.fullname
+        tv_email.text = user.email
+        Glide.with(this).load(user.userImg).placeholder(R.drawable.ic_person)
+            .error(R.drawable.ic_person).into(iv_profile)
     }
 
     private fun refreshAdapter(items: ArrayList<Post>) {
@@ -88,7 +138,16 @@ class ProfileFragment : BaseFragment() {
 
     private fun uploadPickPhoto() {
         if (pickedPhoto != null) {
-            Logger.d(TAG, pickedPhoto!!.path.toString())
+            StorageManager.uploadUserPhoto(pickedPhoto!!, object : StorageHandler {
+                override fun onSuccess(imgUrl: String) {
+                    DatabaseManager.updateUserImage(imgUrl)
+                    iv_profile.setImageURI(pickedPhoto)
+                }
+
+                override fun onError(exception: Exception?) {
+
+                }
+            })
         }
     }
 }

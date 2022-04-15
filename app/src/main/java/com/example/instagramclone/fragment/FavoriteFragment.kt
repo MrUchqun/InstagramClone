@@ -29,7 +29,6 @@ class FavoriteFragment : BaseFragment() {
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = GridLayoutManager(activity, 1)
 
-        refreshAdapter(loadPost())
     }
 
     private fun refreshAdapter(list: ArrayList<Post>) {

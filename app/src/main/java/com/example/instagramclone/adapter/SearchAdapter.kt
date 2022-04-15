@@ -34,6 +34,8 @@ class SearchAdapter(var fragment: SearchFragment, var items: ArrayList<User>) : 
         if (holder is UserViewHolder) {
             holder.tv_fullname.text = user.fullname
             holder.tv_email.text = user.email
+            Glide.with(fragment).load(user.userImg).placeholder(R.drawable.ic_person)
+                .error(R.drawable.ic_person).into(holder.iv_profile)
         }
     }
 

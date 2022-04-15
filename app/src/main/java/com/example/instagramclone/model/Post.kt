@@ -1,12 +1,40 @@
 package com.example.instagramclone.model
 
+import android.annotation.SuppressLint
+import java.text.SimpleDateFormat
+import java.util.*
+
 class Post {
+    var id: String = ""
     var caption: String = ""
-    var image: String = ""
+    var postImg: String = ""
+    var currentDate: String = currentTime()
 
-    constructor()
+    var uid: String = ""
+    var fullname: String = ""
+    var userImg: String = ""
 
-    constructor(image: String) {
-        this.image = image
+
+
+    constructor(caption: String, postImg: String) {
+        this.caption = caption
+        this.postImg = postImg
+    }
+
+    constructor(id: String, caption: String, postImg: String) {
+        this.id = id
+        this.caption = caption
+        this.postImg = postImg
+    }
+
+    constructor(postImg: String) {
+        this.postImg = postImg
+    }
+
+
+    @SuppressLint("SimpleDateFormat")
+    private fun currentTime(): String {
+        val sdf = SimpleDateFormat("dd/M//yyyy hh:mm")
+        return sdf.format(Date())
     }
 }

@@ -11,7 +11,10 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.instagramclone.R
 import com.example.instagramclone.adapter.SearchAdapter
+import com.example.instagramclone.managers.DatabaseManager
+import com.example.instagramclone.managers.handler.DBUsersHandler
 import com.example.instagramclone.model.User
+import java.lang.Exception
 import java.util.*
 import java.util.Locale.getDefault
 import kotlin.collections.ArrayList
@@ -52,18 +55,20 @@ class SearchFragment : BaseFragment() {
         })
 
         loadUsers()
-        refreshAdapter(items)
     }
 
-    private fun loadUsers(): ArrayList<User> {
-        items = ArrayList()
-        for (item in 0..10){
-            items.add(User("mr_elyor", "mr.elyor111@gmail.com"))
-            items.add(User("bekzod", "mr.elyor111@gmail.com"))
-            items.add(User("sherzod", "mr.elyor111@gmail.com"))
-            items.add(User("bekhruzbek", "mr.elyor111@gmail.com"))
-        }
-        return items
+    private fun loadUsers() {
+        DatabaseManager.loadUsers(object : DBUsersHandler {
+            override fun onSuccess(users: ArrayList<User>) {
+                items.clear()
+                items.addAll(users)
+                refreshAdapter(items)
+            }
+
+            override fun onError(e: Exception) {
+
+            }
+        })
     }
 
     private fun refreshAdapter(items: ArrayList<User>) {

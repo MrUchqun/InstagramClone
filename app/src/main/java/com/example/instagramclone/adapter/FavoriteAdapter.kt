@@ -34,7 +34,7 @@ class FavoriteAdapter(var fragment: FavoriteFragment, var items: ArrayList<Post>
             val iv_like = holder.iv_like
 
             iv_like.setImageResource(R.drawable.ic_baseline_favorite_24)
-            Glide.with(fragment).load(post.image).placeholder(ColorDrawable(Color.GRAY)).into(iv_post)
+            Glide.with(fragment).load(post.postImg).placeholder(ColorDrawable(Color.GRAY)).into(iv_post)
         }
     }
 

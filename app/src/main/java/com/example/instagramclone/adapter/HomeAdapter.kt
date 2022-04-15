@@ -32,7 +32,7 @@ class HomeAdapter(var fragment: HomeFragment, var items: ArrayList<Post>) : Base
         if (holder is PostViewHolder) {
             val iv_post = holder.iv_post
 
-            Glide.with(fragment).load(post.image).placeholder(ColorDrawable(Color.GRAY)).into(iv_post)
+            Glide.with(fragment).load(post.postImg).placeholder(ColorDrawable(Color.GRAY)).into(iv_post)
         }
     }
 
