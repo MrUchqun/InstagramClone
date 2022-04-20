@@ -10,10 +10,12 @@ import android.widget.TextView
 import com.example.instagramclone.R
 import com.example.instagramclone.managers.AuthManager
 import com.example.instagramclone.managers.DatabaseManager
+import com.example.instagramclone.managers.PrefsManager
 import com.example.instagramclone.managers.handler.AuthHandler
 import com.example.instagramclone.managers.handler.DBUserHandler
 import com.example.instagramclone.model.User
 import com.example.instagramclone.utils.Extensions.toast
+import com.example.instagramclone.utils.Utils
 
 /**
  * In SignUpActivity, user can signup using fullName, email, password
@@ -70,6 +72,10 @@ class SignUpActivity : BaseActivity() {
     }
 
     private fun storeUserToDB(user: User) {
+
+        user.device_token = PrefsManager(this).loadDeviceToken()!!
+        user.device_id = Utils.getDeviceID(this)
+
         DatabaseManager.storeUser(user, object : DBUserHandler {
             override fun onSuccess(user: User?) {
                 dismissLoading()

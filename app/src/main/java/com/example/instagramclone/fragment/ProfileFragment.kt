@@ -23,10 +23,13 @@ import com.example.instagramclone.managers.DatabaseManager
 import com.example.instagramclone.managers.StorageManager
 import com.example.instagramclone.managers.handler.DBPostsHandler
 import com.example.instagramclone.managers.handler.DBUserHandler
+import com.example.instagramclone.managers.handler.DBUsersHandler
 import com.example.instagramclone.managers.handler.StorageHandler
 import com.example.instagramclone.model.Post
 import com.example.instagramclone.model.User
+import com.example.instagramclone.utils.DialogListener
 import com.example.instagramclone.utils.Logger
+import com.example.instagramclone.utils.Utils
 import com.google.android.material.imageview.ShapeableImageView
 import com.sangcomz.fishbun.FishBun
 import com.sangcomz.fishbun.adapter.image.impl.GlideAdapter
@@ -38,6 +41,8 @@ class ProfileFragment : BaseFragment() {
     lateinit var tv_fullname: TextView
     lateinit var tv_email: TextView
     lateinit var tv_posts: TextView
+    lateinit var tv_followers: TextView
+    lateinit var tv_following: TextView
 
     var pickedPhoto: Uri? = null
     var allPhotos = ArrayList<Uri>()
@@ -56,6 +61,9 @@ class ProfileFragment : BaseFragment() {
         tv_fullname = view.findViewById(R.id.tv_fullname)
         tv_email = view.findViewById(R.id.tv_email)
         tv_posts = view.findViewById(R.id.tv_posts)
+        tv_followers = view.findViewById(R.id.tv_followers)
+        tv_following = view.findViewById(R.id.tv_following)
+
 
         recyclerView = view.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = GridLayoutManager(activity, 2)
@@ -67,12 +75,23 @@ class ProfileFragment : BaseFragment() {
 
         val iv_logout = view.findViewById<ImageView>(R.id.iv_logout)
         iv_logout.setOnClickListener {
-            AuthManager.signOut()
-            callSignInActivity(requireContext())
+            Utils.dialogDouble(
+                requireContext(),
+                getString(R.string.str_sign_out),
+                object : DialogListener {
+                    override fun onCallback(isChosen: Boolean) {
+                        if (isChosen) {
+                            AuthManager.signOut()
+                            callSignInActivity(requireContext())
+                        }
+                    }
+                })
         }
 
         loadUserInfo()
         loadMyPosts()
+        loadMyFollowers()
+        loadMyFollowing()
     }
 
     private fun loadMyPosts() {
@@ -81,6 +100,30 @@ class ProfileFragment : BaseFragment() {
             override fun onSuccess(posts: ArrayList<Post>) {
                 tv_posts.text = posts.size.toString()
                 refreshAdapter(posts)
+            }
+
+            override fun onError(e: java.lang.Exception) {
+            }
+        })
+    }
+
+    private fun loadMyFollowers() {
+        val uid = AuthManager.currentUser()!!.uid
+        DatabaseManager.loadFollowers(uid, object : DBUsersHandler {
+            override fun onSuccess(users: ArrayList<User>) {
+                tv_followers.text = users.size.toString()
+            }
+
+            override fun onError(e: java.lang.Exception) {
+            }
+        })
+    }
+
+    private fun loadMyFollowing() {
+        val uid = AuthManager.currentUser()!!.uid
+        DatabaseManager.loadFollowing(uid, object : DBUsersHandler {
+            override fun onSuccess(users: ArrayList<User>) {
+                tv_following.text = users.size.toString()
             }
 
             override fun onError(e: java.lang.Exception) {

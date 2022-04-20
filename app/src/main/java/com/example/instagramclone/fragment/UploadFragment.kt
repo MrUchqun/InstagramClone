@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.example.instagramclone.R
 import com.example.instagramclone.managers.AuthManager
 import com.example.instagramclone.managers.DatabaseManager
+import com.example.instagramclone.managers.PrefsManager
 import com.example.instagramclone.managers.StorageManager
 import com.example.instagramclone.managers.handler.DBPostHandler
 import com.example.instagramclone.managers.handler.DBUserHandler
@@ -130,6 +131,7 @@ class UploadFragment : BaseFragment() {
     }
 
     private fun storePostToDB(post: Post) {
+        post.device_token = PrefsManager(requireContext()).loadDeviceToken()!!
         DatabaseManager.storePosts(post, object : DBPostHandler {
             override fun onSuccess(post: Post) {
                 storeFeedToDB(post)

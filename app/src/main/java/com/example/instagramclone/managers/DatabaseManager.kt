@@ -1,13 +1,16 @@
 package com.example.instagramclone.managers
 
 import android.annotation.SuppressLint
-import com.example.instagramclone.managers.handler.DBPostHandler
-import com.example.instagramclone.managers.handler.DBPostsHandler
-import com.example.instagramclone.managers.handler.DBUserHandler
-import com.example.instagramclone.managers.handler.DBUsersHandler
-import com.example.instagramclone.model.Post
-import com.example.instagramclone.model.User
+import com.example.instagramclone.managers.handler.*
+import com.example.instagramclone.model.*
+import com.example.instagramclone.network.RetrofitHttp
+import com.example.instagramclone.utils.Logger
 import com.google.firebase.firestore.FirebaseFirestore
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.lang.Exception
+
 
 object DatabaseManager {
 
@@ -60,8 +63,10 @@ object DatabaseManager {
                     val fullname = document.getString("fullname")
                     val email = document.getString("email")
                     val userImg = document.getString("userImg")
+                    val device_token = document.getString("device_token")
                     val user = User(fullname!!, email!!, userImg!!)
                     user.uid = uid!!
+                    user.device_token = device_token!!
                     users.add(user)
                 }
                 handler.onSuccess(users)
@@ -119,7 +124,8 @@ object DatabaseManager {
     }
 
     fun loadFeeds(uid: String, handler: DBPostsHandler) {
-        val reference = database.collection(USER_PATH).document(uid).collection(FEED_PATH).orderBy("currentDate")
+        val reference = database.collection(USER_PATH).document(uid).collection(FEED_PATH)
+            .orderBy("currentDate")
         reference.get().addOnCompleteListener {
             val posts = ArrayList<Post>()
             if (it.isSuccessful) {
@@ -129,11 +135,17 @@ object DatabaseManager {
                     val postImg = document.getString("postImg")
                     val fullname = document.getString("fullname")
                     val userImg = document.getString("userImg")
+                    val currentDate = document.getString("currentDate")
+                    var isLiked = document.getBoolean("isLiked")
+                    if (isLiked == null) isLiked = false
+                    val userId = document.getString("uid")
 
                     val post = Post(id!!, caption!!, postImg!!)
-                    post.uid = uid
+                    post.uid = userId!!
                     post.fullname = fullname!!
                     post.userImg = userImg!!
+                    post.currentDate = currentDate!!
+                    post.isLiked = isLiked
                     posts.add(post)
                 }
                 handler.onSuccess(posts)
@@ -142,4 +154,171 @@ object DatabaseManager {
             }
         }
     }
+
+    fun loadLikedFeeds(uid: String, handler: DBPostsHandler) {
+        val reference = database.collection(USER_PATH).document(uid).collection(FEED_PATH)
+            .whereEqualTo("isLiked", true)
+        reference.get().addOnCompleteListener {
+            val posts = ArrayList<Post>()
+            if (it.isSuccessful) {
+                for (document in it.result!!) {
+                    val id = document.getString("id")
+                    val caption = document.getString("caption")
+                    val postImg = document.getString("postImg")
+                    val fullname = document.getString("fullname")
+                    val userImg = document.getString("userImg")
+                    val currentDate = document.getString("currentDate")
+                    var isLiked = document.getBoolean("isLiked")
+                    if (isLiked == null) isLiked = false
+                    val userId = document.getString("uid")
+
+                    val post = Post(id!!, caption!!, postImg!!)
+                    post.uid = userId!!
+                    post.fullname = fullname!!
+                    post.userImg = userImg!!
+                    post.currentDate = currentDate!!
+                    post.isLiked = isLiked
+                    posts.add(post)
+                }
+                handler.onSuccess(posts)
+            } else {
+                handler.onError(it.exception!!)
+            }
+        }
+    }
+
+    fun followUser(me: User, to: User, handler: DBFollowHandler) {
+        // User(To) is in my following
+        database.collection(USER_PATH).document(me.uid).collection(FOLLOWING_PATH).document(to.uid)
+            .set(to).addOnSuccessListener {
+                // User(Me) is in his/her followers
+                database.collection(USER_PATH).document(to.uid).collection(FOLLOWERS_PATH)
+                    .document(me.uid).set(me).addOnSuccessListener {
+                        handler.onSuccess(true)
+                    }.addOnFailureListener {
+                        handler.onError(it)
+                    }
+            }.addOnFailureListener {
+                handler.onError(it)
+            }
+    }
+
+    fun unFollowUser(me: User, to: User, handler: DBFollowHandler) {
+        // User(To) delete in my following
+        database.collection(USER_PATH).document(me.uid).collection(FOLLOWING_PATH).document(to.uid)
+            .delete().addOnSuccessListener {
+                // User(Me) delete in his/her followers
+                database.collection(USER_PATH).document(to.uid).collection(FOLLOWERS_PATH)
+                    .document(me.uid).delete().addOnSuccessListener {
+                        handler.onSuccess(false)
+                    }.addOnFailureListener {
+                        handler.onError(it)
+                    }
+            }.addOnFailureListener {
+                handler.onError(it)
+            }
+    }
+
+    fun loadFollowing(uid: String, handler: DBUsersHandler) {
+        database.collection(USER_PATH).document(uid).collection(FOLLOWING_PATH).get()
+            .addOnCompleteListener {
+                val users = ArrayList<User>()
+                if (it.isSuccessful) {
+                    for (document in it.result!!) {
+                        val newUid = document.getString("uid")
+                        val fullname = document.getString("fullname")
+                        val email = document.getString("email")
+                        val userImg = document.getString("userImg")
+                        val device_token = document.getString("device_token")
+                        val user = User(fullname!!, email!!, userImg!!)
+                        user.uid = newUid!!
+                        user.device_token = device_token!!
+                        users.add(user)
+                    }
+                    handler.onSuccess(users)
+                } else {
+                    handler.onError(it.exception!!)
+                }
+            }
+    }
+
+    fun loadFollowers(uid: String, handler: DBUsersHandler) {
+        database.collection(USER_PATH).document(uid).collection(FOLLOWERS_PATH).get()
+            .addOnCompleteListener {
+                val users = ArrayList<User>()
+                if (it.isSuccessful) {
+                    for (document in it.result!!) {
+                        val newUid = document.getString("uid")
+                        val fullname = document.getString("fullname")
+                        val email = document.getString("email")
+                        val userImg = document.getString("userImg")
+                        val user = User(fullname!!, email!!, userImg!!)
+                        user.uid = newUid!!
+                        users.add(user)
+                    }
+                    handler.onSuccess(users)
+                } else {
+                    handler.onError(it.exception!!)
+                }
+            }
+    }
+
+    fun storePostsToMyFeed(uid: String, to: User) {
+        loadPosts(to.uid, object : DBPostsHandler {
+            override fun onSuccess(posts: ArrayList<Post>) {
+                for (post in posts) {
+                    storeFeed(uid, post)
+                }
+            }
+
+            override fun onError(e: Exception) {
+            }
+        })
+    }
+
+    private fun storeFeed(uid: String, post: Post) {
+        val reference = database.collection(USER_PATH).document(uid).collection(FEED_PATH)
+        reference.document(post.id).set(post)
+    }
+
+    fun removePostsFromMyFeed(uid: String, to: User) {
+        loadPosts(to.uid, object : DBPostsHandler {
+            override fun onSuccess(posts: ArrayList<Post>) {
+                for (post in posts) {
+                    removeFeed(uid, post)
+                }
+            }
+
+            override fun onError(e: Exception) {
+            }
+        })
+    }
+
+    private fun removeFeed(uid: String, post: Post) {
+        val reference = database.collection(USER_PATH).document(uid).collection(FEED_PATH)
+        reference.document(post.id).delete()
+    }
+
+    fun likeFeedPost(uid: String, post: Post) {
+        database.collection(USER_PATH).document(uid).collection(FEED_PATH).document(post.id)
+            .update("isLiked", post.isLiked)
+        if (uid == post.uid)
+            database.collection(USER_PATH).document(uid).collection(POST_PATH).document(post.id)
+                .update("isLiked", post.isLiked)
+    }
+
+    fun deletePost(post: Post, handler: DBPostHandler) {
+        val reference1 = database.collection(USER_PATH).document(post.uid).collection(POST_PATH)
+        reference1.document(post.id).delete().addOnSuccessListener {
+            val reference2 = database.collection(USER_PATH).document(post.uid).collection(FEED_PATH)
+            reference2.document(post.id).delete().addOnSuccessListener {
+                handler.onSuccess(post)
+            }.addOnFailureListener {
+                handler.onError(it)
+            }
+        }.addOnFailureListener {
+            handler.onError(it)
+        }
+    }
+
 }
